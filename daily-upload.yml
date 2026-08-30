@@ -1,0 +1,50 @@
+name: Daily Gaming Shorts Upload
+
+on:
+  schedule:
+    # 21:00 UTC = 4:00 PM US Eastern (5:00 PM EDT in summer) --
+    # a common evening scroll time for a US audience.
+    # Adjust the hour to taste; GitHub cron is always UTC.
+    - cron: "0 21 * * *"
+  workflow_dispatch: {}  # lets you trigger a run manually from the Actions tab
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore posted-stories state
+        uses: actions/cache@v4
+        with:
+          path: scripts/state
+          key: posted-links-state
+
+      - name: Run pipeline
+        working-directory: scripts
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+        run: python main.py
+
+      - name: Save posted-stories state
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: scripts/state
+          key: posted-links-state
