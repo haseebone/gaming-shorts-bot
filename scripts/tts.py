@@ -135,15 +135,17 @@ def _move_if_different_extension(written_path: str, requested_path: str):
 
 
 def generate_voiceover(text: str, audio_path: str, srt_path: str):
-    """Tries edge-tts, then Piper, then gTTS, then espeak-ng.
-    Raises only if all four fail."""
-    try:
-        asyncio.run(_try_edge_tts(text, audio_path, srt_path))
-        print("[tts] Used edge-tts")
-        return
-    except Exception as e:
-        print(f"[tts] edge-tts failed ({e}), falling back to Piper (offline neural voice)")
+    """Tries Piper, then edge-tts, then gTTS, then espeak-ng.
 
+    Piper goes first (not edge-tts) because Microsoft's edge-tts
+    handshake has been failing with a 403 on a recurring, ongoing basis
+    industry-wide (see github.com/rany2/edge-tts/issues -- still
+    unresolved as of the most recent reports), so trying it first just
+    means eating a failed request on nearly every run before falling
+    back anyway. Piper is a solid offline neural voice and never
+    depends on any external API being up.
+
+    Raises only if all four fail."""
     try:
         piper_audio_path = audio_path.rsplit(".", 1)[0] + ".wav"
         _try_piper(text, piper_audio_path, srt_path)
@@ -151,7 +153,14 @@ def generate_voiceover(text: str, audio_path: str, srt_path: str):
         print("[tts] Used Piper (offline neural voice)")
         return
     except Exception as e:
-        print(f"[tts] Piper failed ({e}), falling back to gTTS")
+        print(f"[tts] Piper failed ({e}), trying edge-tts")
+
+    try:
+        asyncio.run(_try_edge_tts(text, audio_path, srt_path))
+        print("[tts] Used edge-tts")
+        return
+    except Exception as e:
+        print(f"[tts] edge-tts failed ({e}), falling back to gTTS")
 
     try:
         _try_gtts(text, audio_path, srt_path)
