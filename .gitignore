@@ -1,7 +1,0 @@
-scripts/output/
-scripts/state/
-*.mp3
-*.mp4
-*.srt
-__pycache__/
-*.pyc
