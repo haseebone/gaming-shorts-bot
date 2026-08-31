@@ -1,0 +1,9 @@
+scripts/output/
+scripts/voices/
+# NOTE: scripts/state/ is intentionally NOT ignored -- the workflow commits
+# it back to the repo so the bot remembers which stories it already used.
+*.mp3
+*.mp4
+*.srt
+__pycache__/
+*.pyc
