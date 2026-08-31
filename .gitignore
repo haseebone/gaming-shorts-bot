@@ -1,5 +1,6 @@
 scripts/output/
 scripts/voices/
+scripts/music/
 # NOTE: scripts/state/ is intentionally NOT ignored -- the workflow commits
 # it back to the repo so the bot remembers which stories it already used.
 *.mp3
