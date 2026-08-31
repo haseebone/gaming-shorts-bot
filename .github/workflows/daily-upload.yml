@@ -61,15 +61,20 @@ jobs:
         run: |
           mkdir -p music
           if [ -z "$(ls -A music 2>/dev/null)" ]; then
-            # Internet Archive's mirror of the freepd.com CC0 (public domain,
-            # no attribution required) music collection. curl -f so a single
-            # missing/renamed track just gets skipped instead of failing the
-            # whole run -- background music is a nice-to-have, not required.
-            BASE="https://archive.org/download/freepd"
-            curl -f -L -o "music/video-game-blockbuster.mp3" "$BASE/Video%20Game%20Blockbuster.mp3" || true
+            # Internet Archive item "allfreepdmusicbykuronekony4n" -- a
+            # verified mirror of freepd.com CC0 (public domain, no
+            # attribution required) tracks, confirmed to contain these
+            # exact filenames at this exact nested path (the old BASE/
+            # filenames below were guessed and didn't exist -- that's
+            # what caused every download to 404). curl -f so a single
+            # missing/renamed track just gets skipped instead of failing
+            # the whole run -- background music is a nice-to-have, not
+            # required.
+            BASE="https://archive.org/download/allfreepdmusicbykuronekony4n/content/drive/My%20Drive/Download/all%20freepd%20music%20%28by%20kuronekony4n%29"
             curl -f -L -o "music/epic-boss-battle.mp3" "$BASE/Epic%20Boss%20Battle.mp3" || true
-            curl -f -L -o "music/boss-battle.mp3" "$BASE/Boss%20Battle.mp3" || true
-            curl -f -L -o "music/tech-grind.mp3" "$BASE/Tech%20F%20Grind.mp3" || true
+            curl -f -L -o "music/epic-blockbuster-2.mp3" "$BASE/Epic%20Blockbuster%202.mp3" || true
+            curl -f -L -o "music/evil-incoming.mp3" "$BASE/Evil%20Incoming.mp3" || true
+            curl -f -L -o "music/strength-of-the-titans.mp3" "$BASE/Strength%20of%20the%20Titans.mp3" || true
             # Remove any zero-byte files left behind by a failed download.
             find music -type f -empty -delete
           fi
