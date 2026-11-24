@@ -14,6 +14,7 @@ from generate_script import build_script, build_title_and_description
 from tts import generate_voiceover
 from stock_media import fetch_background_clip
 from graphics import is_tournament_story, build_tournament_background
+from title_card import make_title_card_clip, make_thumbnail_image
 from assemble_video import assemble, get_duration_seconds
 from youtube_upload import upload_video
 
@@ -31,6 +32,8 @@ def process_story(story: dict, index: int):
     srt_path = f"{base}.srt"
     bg_path = f"{base}_bg.mp4"
     bg_image_path = f"{base}_bg.png"
+    title_card_path = f"{base}_title.mp4"
+    thumbnail_path = config.THUMBNAIL_PATH
     final_path = f"{base}_final.mp4"
 
     print(f"[{index}] Story: {story['title']}")
@@ -55,7 +58,24 @@ def process_story(story: dict, index: int):
     else:
         print(f"[{index}] No background music found -- rendering without it")
 
-    assemble(bg_path, audio_path, srt_path, final_path, music_path=music_path)
+    # Branded title card (optional, never fatal).
+    try:
+        make_title_card_clip(story["title"], title_card_path)
+        print(f"[{index}] Title card generated")
+    except Exception as e:
+        print(f"[{index}] Title card failed ({e}), continuing without it")
+        title_card_path = None
+
+    assemble(bg_path, audio_path, srt_path, final_path, music_path=music_path,
+             title_card_path=title_card_path)
+
+    # Custom thumbnail (optional -- needs a verified channel, else skipped).
+    try:
+        make_thumbnail_image(story["title"], thumbnail_path)
+        print(f"[{index}] Thumbnail generated")
+    except Exception as e:
+        print(f"[{index}] Thumbnail failed ({e}), uploading without it")
+        thumbnail_path = None
 
     title, description = build_title_and_description(story)
     upload_video(
@@ -63,6 +83,7 @@ def process_story(story: dict, index: int):
         title=title,
         description=description,
         tags=["gaming", "esports", "gamingnews", "shorts"],
+        thumbnail_path=thumbnail_path,
     )
 
 

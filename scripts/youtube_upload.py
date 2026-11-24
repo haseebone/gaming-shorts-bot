@@ -28,7 +28,8 @@ def _get_credentials() -> Credentials:
     return creds
 
 
-def upload_video(file_path: str, title: str, description: str, tags: list[str]):
+def upload_video(file_path: str, title: str, description: str, tags: list[str],
+                 thumbnail_path: str | None = None):
     creds = _get_credentials()
     youtube = build("youtube", "v3", credentials=creds)
 
@@ -58,4 +59,18 @@ def upload_video(file_path: str, title: str, description: str, tags: list[str]):
 
     video_id = response["id"]
     print(f"Uploaded: https://youtube.com/shorts/{video_id}")
+
+    # Custom thumbnail only works on a phone-verified channel. Never let a
+    # thumbnail failure undo a successful upload.
+    if thumbnail_path and os.path.exists(thumbnail_path):
+        try:
+            youtube.thumbnails().set(
+                videoId=video_id,
+                media_body=MediaFileUpload(thumbnail_path),
+            ).execute()
+            print("Thumbnail set.")
+        except Exception as e:
+            print(f"[!] Could not set custom thumbnail (video is still live): {e}")
+            print("    Tip: verify your channel at youtube.com/verify to enable custom thumbnails.")
+
     return video_id

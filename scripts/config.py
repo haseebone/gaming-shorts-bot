@@ -66,3 +66,12 @@ FALLBACK_VISUAL_QUERIES = [
 
 OUTPUT_DIR = "output"
 STATE_FILE = "state/posted_links.json"  # tracks which stories were already made into videos
+
+# Title-card: a ~2.5s branded opening with the story title, so sound-off
+# viewers instantly know what the video is about (big retention win).
+TITLE_CARD_SECONDS = 2.5
+TITLE_CARD_BRAND = "GAMING NEWS"
+
+# Thumbnail upload is attempted but never fatal -- it needs a verified
+# channel, otherwise it's skipped with a warning.
+THUMBNAIL_PATH = "thumbnail.jpg"

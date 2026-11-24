@@ -20,9 +20,12 @@ def get_duration_seconds(path: str) -> float:
 
 
 def assemble(background_path: str, audio_path: str, srt_path: str, output_path: str,
-             music_path: str | None = None):
+             music_path: str | None = None, title_card_path: str | None = None):
     audio_duration = get_duration_seconds(audio_path)
-    target_duration = min(audio_duration + 0.5, config.MAX_DURATION_SECONDS)
+    title_extra = 0.0
+    if title_card_path:
+        title_extra = get_duration_seconds(title_card_path)
+    target_duration = min(audio_duration + title_extra + 0.5, config.MAX_DURATION_SECONDS)
 
     # Bold, boxed, large captions (the CapCut/TikTok look) -- much more
     # readable and eye-catching than small plain subtitle text, which is
@@ -49,9 +52,6 @@ def assemble(background_path: str, audio_path: str, srt_path: str, output_path: 
     )
 
     if music_path:
-        # Music sits well under the voice (constant low volume -- simple
-        # and reliable) rather than full sidechain ducking, which keeps
-        # this dependency-free and fast to render.
         audio_filter = (
             f"[2:a]volume={config.MUSIC_VOLUME}[music];"
             f"[1:a][music]amix=inputs=2:duration=first:dropout_transition=2:weights=1 1[aout]"
@@ -62,18 +62,45 @@ def assemble(background_path: str, audio_path: str, srt_path: str, output_path: 
         filter_complex = video_filter
         audio_map = ["-map", "1:a:0"]
 
-    cmd = [
-        "ffmpeg", "-y",
-        *inputs,
-        "-t", str(target_duration),
-        "-filter_complex", filter_complex,
-        "-map", "[vout]", *audio_map,
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
-        "-c:a", "aac", "-b:a", "128k",
-        "-shortest",
-        output_path,
-    ]
-    subprocess.run(cmd, check=True)
+    # Render the main body (with title card prepended if provided).
+    if title_card_path:
+        body_path = output_path.rsplit(".", 1)[0] + "_body.mp4"
+        cmd_body = [
+            "ffmpeg", "-y",
+            *inputs,
+            "-t", str(target_duration),
+            "-filter_complex", filter_complex,
+            "-map", "[vout]", *audio_map,
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+            "-c:a", "aac", "-b:a", "128k",
+            "-shortest",
+            body_path,
+        ]
+        subprocess.run(cmd_body, check=True)
+
+        # Concat title card + body.
+        list_file = output_path.rsplit(".", 1)[0] + "_concat.txt"
+        with open(list_file, "w") as f:
+            f.write(f"file '{title_card_path}'\n")
+            f.write(f"file '{body_path}'\n")
+        subprocess.run(
+            ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file,
+             "-c", "copy", output_path],
+            check=True,
+        )
+    else:
+        cmd = [
+            "ffmpeg", "-y",
+            *inputs,
+            "-t", str(target_duration),
+            "-filter_complex", filter_complex,
+            "-map", "[vout]", *audio_map,
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+            "-c:a", "aac", "-b:a", "128k",
+            "-shortest",
+            output_path,
+        ]
+        subprocess.run(cmd, check=True)
     return output_path
 
 
