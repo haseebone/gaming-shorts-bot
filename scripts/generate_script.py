@@ -142,11 +142,32 @@ def build_title_and_description(story: dict) -> tuple[str, str]:
         base_title = base_title[:87] + "..."
     yt_title = f"{base_title} #Shorts"
 
+    # Pull a few relevant hashtags straight from the story title (up to 4
+    # short words) so each video gets better discovery than a generic tag list.
+    words = re.findall(r"[A-Za-z0-9]+", base_title)
+    stop = {
+        "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with",
+        "is", "are", "was", "were", "at", "from", "by", "after", "new", "its",
+        "it's", "what", "why", "how", "who", "when", "be", "this", "that",
+    }
+    candidates = []
+    seen = set()
+    for w in words:
+        lw = w.lower()
+        if lw in stop or lw in seen or len(w) < 4:
+            continue
+        seen.add(lw)
+        candidates.append(w.lower())
+        if len(candidates) >= 4:
+            break
+
+    hashtags = " ".join("#" + c for c in candidates)
     description = (
         f"{story['title']}\n\n"
         f"Source: {story['source']}\n"
         f"Read more: {story['link']}\n\n"
         "#gaming #esports #gamingnews #shorts"
+        + (f" {hashtags}" if hashtags else "")
     )
     return yt_title, description
 

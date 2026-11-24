@@ -23,6 +23,12 @@ on:
     - cron: "0 1 * * *"
   workflow_dispatch: {}  # lets you trigger a run manually from the Actions tab
 
+# Never let two runs overlap -- otherwise two runs can grab the same fresh
+# story and post the exact same video twice.
+concurrency:
+  group: gaming-shorts-pipeline
+  cancel-in-progress: false
+
 permissions:
   contents: write  # needed so the workflow can save its own state file back to the repo
 
@@ -92,15 +98,16 @@ jobs:
       - name: Save "already posted" state back to the repo
         # Commits scripts/state/posted_links.json if it changed, so the
         # bot remembers which stories it's used even between separate
-        # runs. Using git instead of actions/cache here because cache
-        # entries can't be overwritten once created in a day -- that was
-        # silently failing before.
+        # runs. Runs even when the pipeline fails (if: always) so a story
+        # that was claimed this run is never re-picked next run.
+        if: always()
         run: |
           git config user.name "gaming-shorts-bot"
           git config user.email "actions@users.noreply.github.com"
           if [ -n "$(git status --porcelain scripts/state)" ]; then
             git add scripts/state
             git commit -m "Update posted-stories state [skip ci]"
+            git pull --rebase origin main || true
             git push
           else
             echo "No state changes to commit."

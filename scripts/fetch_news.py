@@ -2,6 +2,7 @@
 Pulls the latest gaming/esports stories from free RSS feeds and returns
 the freshest N that haven't been turned into a video yet.
 """
+import html
 import json
 import os
 import re
@@ -25,6 +26,7 @@ def _save_seen(seen):
 
 def _clean_summary(raw_html: str) -> str:
     text = re.sub("<[^<]+?>", "", raw_html or "")
+    text = html.unescape(text)  # &amp; &#39; &ldquo; -> real characters
     return re.sub(r"\s+", " ", text).strip()
 
 
