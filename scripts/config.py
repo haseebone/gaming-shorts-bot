@@ -32,8 +32,16 @@ TARGET_DURATION_SECONDS = 75
 
 # Background music volume relative to the voiceover (0.0-1.0). Kept low
 # so it never competes with narration -- just adds energy underneath it.
-MUSIC_VOLUME = 0.12
+MUSIC_VOLUME = 0.16
 MUSIC_DIR = "music"
+
+# Music ducking (sidechain compression): the music automatically gets
+# quieter while the voice is speaking and swells back in the gaps --
+# the "news/podcast" sound. Adjust to taste.
+DUCK_THRESHOLD = 0.03
+DUCK_RATIO = 8
+DUCK_ATTACK = 20    # ms
+DUCK_RELEASE = 250  # ms
 
 # edge-tts voice. Use an American English voice to match US targeting.
 # Christopher = deep, energetic, great for gaming/news commentary.

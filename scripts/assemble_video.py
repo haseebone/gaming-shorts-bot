@@ -20,11 +20,14 @@ def get_duration_seconds(path: str) -> float:
 
 
 def assemble(background_path: str, audio_path: str, srt_path: str, output_path: str,
-             music_path: str | None = None, title_card_path: str | None = None):
+             music_path: str | None = None, title_card_path: str | None = None,
+             end_card_path: str | None = None):
     audio_duration = get_duration_seconds(audio_path)
     title_extra = 0.0
     if title_card_path:
         title_extra = get_duration_seconds(title_card_path)
+    if end_card_path:
+        title_extra += get_duration_seconds(end_card_path)
     target_duration = min(audio_duration + title_extra + 0.5, config.MAX_DURATION_SECONDS)
 
     # Bold, boxed, large captions (the CapCut/TikTok look) -- much more
@@ -52,9 +55,18 @@ def assemble(background_path: str, audio_path: str, srt_path: str, output_path: 
     )
 
     if music_path:
+        # Music is ducked under the voice (sidechain compression) so it
+        # swells in the gaps and drops during speech -- the professional
+        # "podcast/news" sound. Fully free (ffmpeg's sidechaincompress).
         audio_filter = (
+            f"[1:a]asplit=2[voice1][voice2];"
             f"[2:a]volume={config.MUSIC_VOLUME}[music];"
-            f"[1:a][music]amix=inputs=2:duration=first:dropout_transition=2:weights=1 1[aout]"
+            f"[voice2]highpass=f=200,"
+            f"sidechaincompress=threshold={config.DUCK_THRESHOLD}:"
+            f"ratio={config.DUCK_RATIO}:attack={config.DUCK_ATTACK}:"
+            f"release={config.DUCK_RELEASE}[duck];"
+            f"[music][duck]amix=inputs=2:duration=first:dropout_transition=2:weights=1 1[musicducked];"
+            f"[voice1][musicducked]amix=inputs=2:duration=first:dropout_transition=2:weights=2 1[aout]"
         )
         filter_complex = f"{video_filter};{audio_filter}"
         audio_map = ["-map", "[aout]"]
@@ -62,45 +74,40 @@ def assemble(background_path: str, audio_path: str, srt_path: str, output_path: 
         filter_complex = video_filter
         audio_map = ["-map", "1:a:0"]
 
-    # Render the main body (with title card prepended if provided).
-    if title_card_path:
-        body_path = output_path.rsplit(".", 1)[0] + "_body.mp4"
-        cmd_body = [
-            "ffmpeg", "-y",
-            *inputs,
-            "-t", str(target_duration),
-            "-filter_complex", filter_complex,
-            "-map", "[vout]", *audio_map,
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
-            "-c:a", "aac", "-b:a", "128k",
-            "-shortest",
-            body_path,
-        ]
-        subprocess.run(cmd_body, check=True)
+    # Render the main body, then concat [title card] + body + [end card].
+    body_path = output_path.rsplit(".", 1)[0] + "_body.mp4"
+    cmd_body = [
+        "ffmpeg", "-y",
+        *inputs,
+        "-t", str(target_duration),
+        "-filter_complex", filter_complex,
+        "-map", "[vout]", *audio_map,
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+        "-c:a", "aac", "-b:a", "128k",
+        "-shortest",
+        body_path,
+    ]
+    subprocess.run(cmd_body, check=True)
 
-        # Concat title card + body.
-        list_file = output_path.rsplit(".", 1)[0] + "_concat.txt"
-        with open(list_file, "w") as f:
+    list_file = output_path.rsplit(".", 1)[0] + "_concat.txt"
+    with open(list_file, "w") as f:
+        if title_card_path:
             f.write(f"file '{title_card_path}'\n")
-            f.write(f"file '{body_path}'\n")
-        subprocess.run(
-            ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file,
-             "-c", "copy", output_path],
-            check=True,
-        )
-    else:
-        cmd = [
-            "ffmpeg", "-y",
-            *inputs,
-            "-t", str(target_duration),
-            "-filter_complex", filter_complex,
-            "-map", "[vout]", *audio_map,
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
-            "-c:a", "aac", "-b:a", "128k",
-            "-shortest",
-            output_path,
-        ]
-        subprocess.run(cmd, check=True)
+        f.write(f"file '{body_path}'\n")
+        if end_card_path:
+            f.write(f"file '{end_card_path}'\n")
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file,
+         "-c", "copy", output_path],
+        check=True,
+    )
+    # Clean up intermediates so the output dir doesn't bloat across runs.
+    import os
+    for p in (list_file, body_path):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
     return output_path
 
 

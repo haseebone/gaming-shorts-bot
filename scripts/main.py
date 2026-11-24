@@ -14,7 +14,7 @@ from generate_script import build_script, build_title_and_description
 from tts import generate_voiceover
 from stock_media import fetch_background_clip
 from graphics import is_tournament_story, build_tournament_background
-from title_card import make_title_card_clip, make_thumbnail_image
+from title_card import make_title_card_clip, make_thumbnail_image, make_end_card_clip
 from assemble_video import assemble, get_duration_seconds
 from youtube_upload import upload_video
 
@@ -24,7 +24,7 @@ def _pick_random_music() -> str | None:
     return random.choice(tracks) if tracks else None
 
 
-def process_story(story: dict, index: int):
+def process_story(story: dict, index: int, upload: bool = True):
     os.makedirs(config.OUTPUT_DIR, exist_ok=True)
     base = os.path.join(config.OUTPUT_DIR, f"video_{index}")
 
@@ -33,6 +33,7 @@ def process_story(story: dict, index: int):
     bg_path = f"{base}_bg.mp4"
     bg_image_path = f"{base}_bg.png"
     title_card_path = f"{base}_title.mp4"
+    end_card_path = f"{base}_end.mp4"
     thumbnail_path = config.THUMBNAIL_PATH
     final_path = f"{base}_final.mp4"
 
@@ -66,8 +67,16 @@ def process_story(story: dict, index: int):
         print(f"[{index}] Title card failed ({e}), continuing without it")
         title_card_path = None
 
+    # Branded end card (optional, never fatal).
+    try:
+        make_end_card_clip(end_card_path, duration_seconds=3.0)
+        print(f"[{index}] End card generated")
+    except Exception as e:
+        print(f"[{index}] End card failed ({e}), continuing without it")
+        end_card_path = None
+
     assemble(bg_path, audio_path, srt_path, final_path, music_path=music_path,
-             title_card_path=title_card_path)
+             title_card_path=title_card_path, end_card_path=end_card_path)
 
     # Custom thumbnail (optional -- needs a verified channel, else skipped).
     try:
@@ -76,6 +85,10 @@ def process_story(story: dict, index: int):
     except Exception as e:
         print(f"[{index}] Thumbnail failed ({e}), uploading without it")
         thumbnail_path = None
+
+    if not upload:
+        print(f"[{index}] LOCAL MODE: video saved to {final_path} (not uploaded)")
+        return
 
     title, description = build_title_and_description(story)
     upload_video(
@@ -88,6 +101,9 @@ def process_story(story: dict, index: int):
 
 
 def main():
+    import sys
+    upload = "--local" not in sys.argv
+
     stories = get_fresh_stories(config.VIDEOS_PER_RUN)
     if not stories:
         print("No fresh stories found this run -- nothing to upload.")
@@ -95,7 +111,7 @@ def main():
 
     for i, story in enumerate(stories, start=1):
         try:
-            process_story(story, i)
+            process_story(story, i, upload=upload)
         except Exception:
             print(f"[{i}] FAILED, skipping this story:")
             traceback.print_exc()

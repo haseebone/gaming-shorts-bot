@@ -133,6 +133,45 @@ def make_title_card_clip(title: str, clip_path: str, duration_seconds: float = N
     return clip_path
 
 
+def make_end_card_clip(out_path: str, duration_seconds: float = 3.0) -> str:
+    """A short branded end card: 'Follow for more gaming news' on a gradient.
+
+    Padded with a silent audio track so concat works cleanly with the body.
+    """
+    w, h = config.VIDEO_WIDTH, config.VIDEO_HEIGHT
+    top, bottom = random.choice(GRADIENTS)
+    img = _vertical_gradient(w, h, top, bottom)
+    draw = ImageDraw.Draw(img)
+
+    accent = (255, 200, 60)
+    draw.rectangle([0, int(h * 0.44), w, int(h * 0.52)], fill=(255, 200, 60))
+
+    follow_font = _font(FONT_BOLD, 84)
+    sub_font = _font(FONT_REGULAR, 40)
+    _centered(draw, w / 2, int(h * 0.56), "FOLLOW FOR MORE", follow_font, (255, 255, 255))
+    _centered(draw, w / 2, int(h * 0.66), "DAILY GAMING NEWS", sub_font, (200, 200, 215))
+
+    image_path = out_path.rsplit(".", 1)[0] + ".png"
+    img.save(image_path)
+
+    fps = 30
+    frames = max(int(duration_seconds * fps), fps)
+    cmd = [
+        "ffmpeg", "-y",
+        "-loop", "1", "-i", image_path,
+        "-f", "lavfi", "-t", str(duration_seconds), "-i", "anullsrc=r=44100:cl=stereo",
+        "-vf",
+        f"scale={config.VIDEO_WIDTH*2}:{config.VIDEO_HEIGHT*2},"
+        f"zoompan=z='min(zoom+0.0012,1.10)':d={frames}:s={config.VIDEO_WIDTH}x{config.VIDEO_HEIGHT}:fps={fps}",
+        "-t", str(duration_seconds),
+        "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "128k",
+        out_path,
+    ]
+    subprocess.run(cmd, check=True)
+    return out_path
+
+
 if __name__ == "__main__":
     make_title_card_clip("Team wins world championship in dramatic final", "test_titlecard.mp4")
     make_thumbnail_image("Team wins world championship in dramatic final", config.THUMBNAIL_PATH)
