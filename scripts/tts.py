@@ -77,7 +77,8 @@ def _get_mp3_duration_via_ffprobe(path: str) -> float:
 
 
 async def _try_edge_tts(text: str, audio_path: str, srt_path: str):
-    communicate = edge_tts.Communicate(text, voice=config.TTS_VOICE)
+    rate = getattr(config, "TTS_RATE", "") or ""
+    communicate = edge_tts.Communicate(text, voice=config.TTS_VOICE, rate=rate)
     submaker = edge_tts.SubMaker()
 
     with open(audio_path, "wb") as audio_file:
@@ -173,16 +174,6 @@ def generate_voiceover(text: str, audio_path: str, srt_path: str):
     _try_espeak(text, espeak_audio_path, srt_path)
     _move_if_different_extension(espeak_audio_path, audio_path)
     print("[tts] Used espeak-ng (offline fallback)")
-
-
-if __name__ == "__main__":
-    generate_voiceover(
-        "This is a test of the gaming news voiceover pipeline.",
-        "test.mp3",
-        "test.srt",
-    )
-    print("Wrote test.mp3 and test.srt")
-
 
 
 if __name__ == "__main__":

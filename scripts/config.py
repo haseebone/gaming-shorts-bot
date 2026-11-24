@@ -20,10 +20,15 @@ RSS_FEEDS = [
 # throughout the day instead of two at once.
 VIDEOS_PER_RUN = 1
 
-# Vertical short specs (YouTube Shorts requirement: <= 60s, 9:16)
+# Vertical short specs (YouTube Shorts requirement: <= 3 min / 180s, 9:16)
 VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
-MAX_DURATION_SECONDS = 58
+# Hard cap = the maximum YouTube Shorts length. Scripts are written to fill
+# up to this when the story is rich enough (never truncating a good answer).
+MAX_DURATION_SECONDS = 180
+# Comfortable target length for a typical news short. Longer, richer stories
+# can go all the way up to MAX_DURATION_SECONDS.
+TARGET_DURATION_SECONDS = 75
 
 # Background music volume relative to the voiceover (0.0-1.0). Kept low
 # so it never competes with narration -- just adds energy underneath it.
@@ -31,8 +36,12 @@ MUSIC_VOLUME = 0.12
 MUSIC_DIR = "music"
 
 # edge-tts voice. Use an American English voice to match US targeting.
+# Christopher = deep, energetic, great for gaming/news commentary.
 # Full list: run `edge-tts --list-voices` locally.
-TTS_VOICE = "en-US-GuyNeural"
+TTS_VOICE = "en-US-ChristopherNeural"
+# Slight speed boost for a punchier, more energetic delivery (percent string
+# edge-tts accepts, e.g. "+8%", "-5%", "10%"). Empty string = normal pace.
+TTS_RATE = "+8%"
 
 # Offline neural fallback voice (used if edge-tts is down). Downloaded by
 # the workflow into this path before the pipeline runs -- see

@@ -28,9 +28,9 @@ def assemble(background_path: str, audio_path: str, srt_path: str, output_path: 
     # readable and eye-catching than small plain subtitle text, which is
     # one of the biggest silent killers of watch time on Shorts.
     caption_style = (
-        "FontName=Arial,FontSize=20,Bold=1,PrimaryColour=&HFFFFFF&,"
+        "FontName=Arial,FontSize=26,Bold=1,PrimaryColour=&HFFFFFF&,"
         "OutlineColour=&H000000&,BackColour=&H80000000&,"
-        "BorderStyle=4,Outline=1,Shadow=0,Alignment=2,MarginV=140"
+        "BorderStyle=4,Outline=1,Shadow=0,Alignment=2,MarginV=150"
     )
 
     if background_path.lower().endswith((".png", ".jpg", ".jpeg")):
@@ -75,12 +75,6 @@ def assemble(background_path: str, audio_path: str, srt_path: str, output_path: 
     ]
     subprocess.run(cmd, check=True)
     return output_path
-
-
-if __name__ == "__main__":
-    assemble("test_bg.mp4", "test.mp3", "test.srt", "test_final.mp4")
-    print("Wrote test_final.mp4")
-
 
 
 if __name__ == "__main__":
