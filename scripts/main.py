@@ -10,7 +10,7 @@ import traceback
 
 import config
 from fetch_news import get_fresh_stories
-from generate_script import build_script, build_title_and_description
+from generate_script import build_script, build_title_and_description, build_youtube_tags
 from tts import generate_voiceover
 from stock_media import fetch_background_clip
 from graphics import is_tournament_story, build_tournament_background
@@ -95,7 +95,7 @@ def process_story(story: dict, index: int, upload: bool = True):
         final_path,
         title=title,
         description=description,
-        tags=["gaming", "esports", "gamingnews", "shorts"],
+        tags=build_youtube_tags(story),
         thumbnail_path=thumbnail_path,
     )
 

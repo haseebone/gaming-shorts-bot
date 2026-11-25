@@ -69,10 +69,10 @@ def assemble(background_path: str, audio_path: str, srt_path: str, output_path: 
             f"[voice1][musicducked]amix=inputs=2:duration=first:dropout_transition=2:weights=2 1[aout]"
         )
         filter_complex = f"{video_filter};{audio_filter}"
-        audio_map = ["-map", "[aout]"]
+        audio_map = ["-map", "[aout]", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11"]
     else:
         filter_complex = video_filter
-        audio_map = ["-map", "1:a:0"]
+        audio_map = ["-map", "1:a:0", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11"]
 
     # Render the main body, then concat [title card] + body + [end card].
     body_path = output_path.rsplit(".", 1)[0] + "_body.mp4"

@@ -217,6 +217,30 @@ def _story_hashtags(headline: str, limit: int = 4) -> str:
     return " ".join("#" + c for c in out)
 
 
+def build_youtube_tags(story: dict, limit: int = 8) -> list[str]:
+    """YouTube search tags from the story headline (plus the channel staples).
+
+    These go into the video's `tags` field for search/discovery -- separate
+    from the description hashtags."""
+    words = re.findall(r"[A-Za-z0-9]+", _clean_headline(story["title"]))
+    stop = {
+        "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with",
+        "is", "are", "was", "were", "at", "from", "by", "after", "new", "its",
+        "it's", "what", "why", "how", "who", "when", "be", "this", "that",
+    }
+    tags = []
+    seen = set()
+    for w in words:
+        lw = w.lower()
+        if lw in stop or lw in seen or len(w) < 3:
+            continue
+        seen.add(lw)
+        tags.append(lw)
+        if len(tags) >= limit:
+            break
+    return tags + ["gaming", "esports", "gamingnews", "shorts"]
+
+
 def build_title_and_description(story: dict) -> tuple[str, str]:
     yt_title = build_yt_title(story)
 
