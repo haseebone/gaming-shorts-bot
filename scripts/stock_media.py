@@ -16,9 +16,46 @@ import config
 PEXELS_API_URL = "https://api.pexels.com/videos/search"
 
 
+# Story keywords that map to safe, royalty-free visual searches on Pexels.
+# We never search a specific game title/brand -- only the *category* of story,
+# so the b-roll is always safe stock footage that still matches the topic.
+STORY_VISUAL_KEYWORDS = {
+    "tournament": "esports arena crowd",
+    "final": "esports stage lights",
+    "championship": "trophy championship esports",
+    "champion": "trophy championship esports",
+    "update": "video game update computer",
+    "patch": "video game update computer",
+    "launch": "game console launch dark room",
+    "release": "game console launch dark room",
+    "console": "video game controller closeup",
+    "playstation": "video game controller closeup",
+    "xbox": "video game controller closeup",
+    "nintendo": "video game controller closeup",
+    "pc": "gaming pc rgb setup",
+    "computer": "computer keyboard gaming",
+    "console": "video game controller closeup",
+    "esports": "esports arena crowd",
+    "stream": "gaming streamer setup neon",
+    "streamer": "gaming streamer setup neon",
+    "coach": "gaming desk neon",
+    "studio": "video game studio office",
+    "developer": "video game developer office",
+    "server": "data center servers blue",
+    "tech": "computer keyboard gaming",
+    "ai": "artificial intelligence circuit",
+}
+
+
 def _pick_query(story_title: str) -> str:
-    # Keep it generic and safe -- never search the game's own name/brand,
-    # just neutral gaming-adjacent scenery.
+    """Pick a Pexels query that loosely matches the story's category.
+
+    Falls back to a random generic gaming-adjacent query when no keyword
+    matches -- never searches the game's own name/brand."""
+    title_lower = story_title.lower()
+    for keyword, query in STORY_VISUAL_KEYWORDS.items():
+        if keyword in title_lower:
+            return query
     return random.choice(config.FALLBACK_VISUAL_QUERIES)
 
 
@@ -63,8 +100,15 @@ def fetch_background_clip(story_title: str, dest_path: str) -> str:
         return _generate_gradient_fallback(dest_path)
 
     last_error = None
-    for _ in range(3):  # try a few different queries before giving up
-        query = _pick_query(story_title)
+    # Try up to 3 DISTINCT queries (keyword match + generic fallbacks) so a
+    # failing/empty query doesn't just repeat itself.
+    queries = [_pick_query(story_title)]
+    for q in config.FALLBACK_VISUAL_QUERIES:
+        if q not in queries:
+            queries.append(q)
+    queries = queries[:3]
+
+    for query in queries:
         try:
             resp = requests.get(
                 PEXELS_API_URL,
