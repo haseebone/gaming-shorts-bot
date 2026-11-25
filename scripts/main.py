@@ -17,6 +17,7 @@ from graphics import is_tournament_story, build_tournament_background
 from title_card import make_title_card_clip, make_thumbnail_image, make_end_card_clip
 from assemble_video import assemble, get_duration_seconds
 from youtube_upload import upload_video
+from notify import send_video_notification
 
 
 def _pick_random_music() -> str | None:
@@ -91,13 +92,17 @@ def process_story(story: dict, index: int, upload: bool = True):
         return
 
     title, description = build_title_and_description(story)
-    upload_video(
+    video_id = upload_video(
         final_path,
         title=title,
         description=description,
         tags=["gaming", "esports", "gamingnews", "shorts"],
         thumbnail_path=thumbnail_path,
     )
+    try:
+        send_video_notification(title, video_id)
+    except Exception as e:
+        print(f"[{index}] Notification failed ({e}), ignoring.")
 
 
 def main():

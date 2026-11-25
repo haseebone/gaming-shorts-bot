@@ -12,7 +12,16 @@ RSS_FEEDS = [
     "https://www.pcgamer.com/rss/",
     "https://www.rockpapershotgun.com/feed",
     "https://liquipedia.net/dota2/index.php?title=Special:RecentChanges&feed=rss",
+    "https://www.gamesradar.com/feed/",
+    "https://www.polygon.com/rss/index.xml",
+    "https://www.vg247.com/feed",
+    "https://www.destructoid.com/feed/",
+    "https://www.nintendolife.com/feed/",
 ]
+
+# Only post stories published within this window -- keeps the channel "news"
+# (a 3-day-old story posted as breaking news looks wrong to viewers).
+MAX_STORY_AGE_HOURS = 72
 
 # How many Shorts to produce and upload per run.
 # Set to 1 -- the workflow now triggers 5x/day at spread-out US times
